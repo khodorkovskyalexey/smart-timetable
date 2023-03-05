@@ -19,10 +19,10 @@ export class RaspOmgtuSdkService {
     [RaspOmgtuScheduleFor.LECTURER]: (id: number) => `${RaspOmgtuSdkService.baseApiUrl}/schedule/lecturer/${id}`,
   };
 
-  async search(type: RaspOmgtuScheduleFor, filter: string) {
+  async search(type: RaspOmgtuScheduleFor, filter: string): Promise<SearchResponse[]> {
     const url = `${this.searchUrl}?term=${filter}&type=${type}`;
     try {
-      const groups = await this.fetch<SearchResponse>(encodeURI(url));
+      const groups = await this.fetch<SearchResponse[]>(encodeURI(url));
 
       return groups;
     } catch (error) {
@@ -97,6 +97,6 @@ export class RaspOmgtuSdkService {
       throw new Error(`Fetch to ${url} return null`);
     }
 
-    return Object.assign({}, response.data as T);
+    return Object.values(response.data) as T;
   }
 }

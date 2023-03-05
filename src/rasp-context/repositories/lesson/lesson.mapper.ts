@@ -1,6 +1,8 @@
+import { NotImplementedException } from '@nestjs/common';
 import { Group, Lesson, Subject } from 'src/rasp-context/core/interfaces';
+import { RaspTargetFilterType } from 'src/rasp-context/core/interfaces/rasp-target-filter';
 import { encodeLessonId, formatLessonDate, getGroupId } from 'src/rasp-context/core/utils';
-import { ScheduleResponse } from 'src/third-parties/rasp-omgtu-skd';
+import { RaspOmgtuScheduleFor, ScheduleResponse } from 'src/third-parties/rasp-omgtu-skd';
 
 export class LessonMapper {
   static parseRaspOmgtu(lessons: ScheduleResponse[]) {
@@ -37,5 +39,21 @@ export class LessonMapper {
     });
 
     return coreLessons;
+  }
+
+  static parseRaspOmgtuScheduleFor(raspOmgtuScheduleFor: RaspOmgtuScheduleFor): RaspTargetFilterType {
+    const mapper: { [P in RaspOmgtuScheduleFor]: () => RaspTargetFilterType } = {
+      [RaspOmgtuScheduleFor.AUDITORIUM]: () => RaspTargetFilterType.AUDITORIUM,
+      [RaspOmgtuScheduleFor.GROUP]: () => RaspTargetFilterType.GROUP,
+      [RaspOmgtuScheduleFor.LECTURER]: () => RaspTargetFilterType.LECTURER,
+      [RaspOmgtuScheduleFor.PERSON]: () => {
+        throw new NotImplementedException(`${RaspOmgtuScheduleFor.PERSON} not implemented`);
+      },
+      [RaspOmgtuScheduleFor.STUDENT]: () => {
+        throw new NotImplementedException(`${RaspOmgtuScheduleFor.STUDENT} not implemented`);
+      },
+    };
+
+    return mapper[raspOmgtuScheduleFor]();
   }
 }
