@@ -4,6 +4,7 @@ import * as config from 'src/infrastructure/config/configuration';
 import { DatabaseModule } from 'src/infrastructure/database/database.module';
 import { AppService } from './app.service';
 import { AppController } from './app.controller';
+import { RaspContextModule } from './rasp-context/rasp-context.module';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { AppController } from './app.controller';
       validationOptions: config.validationOptions,
     }),
     DatabaseModule,
+    RaspContextModule,
   ],
   controllers: [AppController],
   providers: [AppService],
