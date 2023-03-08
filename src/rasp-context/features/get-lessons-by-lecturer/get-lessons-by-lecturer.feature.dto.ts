@@ -1,7 +1,7 @@
 import { OmgtuRaspId } from 'src/rasp-context/core/types';
 
-export interface GetLessonsFeatureDto {
-  groupId: OmgtuRaspId;
+export interface GetLessonsByLecturerFeatureDto {
+  lecturerId: OmgtuRaspId;
   startAt: Date;
   endAt: Date;
 }
