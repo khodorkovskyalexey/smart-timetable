@@ -26,6 +26,15 @@ export class LessonRepository {
     return LessonMapper.parseRaspOmgtu(raspOmgtuLessons);
   }
 
+  async getByAuditorium(auditoriumId: number, dates: { start: Date; end: Date }): Promise<Lesson[]> {
+    const startDate = dates.start.toISOString();
+    const endDate = dates.end.toISOString();
+
+    const raspOmgtuLessons = await this.raspOmgtuSdkService.schedulesForAuditorium(auditoriumId, startDate, endDate);
+
+    return LessonMapper.parseRaspOmgtu(raspOmgtuLessons);
+  }
+
   async getRaspTargetFilters(filter: string): Promise<RaspTargetFilter[]> {
     const targetFilters = await Promise.all([
       this.raspOmgtuSdkService.search(RaspOmgtuScheduleFor.GROUP, filter),
