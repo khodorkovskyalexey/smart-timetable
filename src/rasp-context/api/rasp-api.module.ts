@@ -1,9 +1,9 @@
 import { Module } from '@nestjs/common';
 import { RaspFeaturesModule } from '../features/rasp-features.module';
-import { GetLessonsController } from './v1/controllers/get-lessons/get-lessons.controller';
+import { GetLessonsByGroupController } from './v1/controllers/get-lessons-by-group/get-lessons-by-group.controller';
 import { GetRaspTargetFiltersController } from './v1/controllers/get-rasp-target-filters/get-rasp-target-filters.controller';
 
-const controllers = [GetLessonsController, GetRaspTargetFiltersController];
+const controllers = [GetLessonsByGroupController, GetRaspTargetFiltersController];
 
 @Module({
   imports: [RaspFeaturesModule],

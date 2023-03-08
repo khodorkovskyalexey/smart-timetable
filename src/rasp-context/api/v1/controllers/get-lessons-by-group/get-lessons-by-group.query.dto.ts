@@ -1,6 +1,6 @@
 import { IsDefined, IsISO8601 } from 'class-validator';
 
-export class GetLessonsQueryDto {
+export class GetLessonsByGroupQueryDto {
   @IsDefined()
   @IsISO8601()
   readonly startAt: string;
