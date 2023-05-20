@@ -1,3 +1,4 @@
+import { Auditorium } from './auditorium';
 import { Group } from './group';
 import { Lecturer } from './lecturer';
 import { LessonEncodedId } from './lesson-encoded-id';
@@ -9,5 +10,6 @@ export interface Lesson {
   endAt: Date;
   group: Group;
   subject: Subject;
+  auditorium: Auditorium;
   lecturers: Lecturer[];
 }

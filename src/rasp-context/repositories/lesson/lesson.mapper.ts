@@ -1,5 +1,6 @@
 import { NotImplementedException } from '@nestjs/common';
 import { Group, Lesson, Subject } from 'src/rasp-context/core/interfaces';
+import { Auditorium } from 'src/rasp-context/core/interfaces/auditorium';
 import { RaspTargetFilterType } from 'src/rasp-context/core/interfaces/rasp-target-filter';
 import { encodeLessonId, formatLessonDate, getGroupId } from 'src/rasp-context/core/utils';
 import { RaspOmgtuScheduleFor, ScheduleResponse } from 'src/third-parties/rasp-omgtu-skd';
@@ -21,6 +22,11 @@ export class LessonMapper {
         name: lesson.discipline,
       };
 
+      const auditorium: Auditorium = {
+        id: lesson.auditoriumOid,
+        name: lesson.auditorium,
+      };
+
       const lessonStartTime = formatLessonDate(lesson.date, lesson.beginLesson);
 
       return {
@@ -35,6 +41,7 @@ export class LessonMapper {
         group,
         lecturers: lesson.listOfLecturers.map((lecturer) => ({ id: lecturer.lecturerOid, name: lecturer.lecturer })),
         subject,
+        auditorium,
       };
     });
 

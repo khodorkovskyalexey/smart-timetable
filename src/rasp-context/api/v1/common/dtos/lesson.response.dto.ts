@@ -1,3 +1,4 @@
+import { AuditoriumResponseDto, AuditoriumResponseDtoParams } from './auditorium.response.dto';
 import { GroupResponseDto, GroupResponseDtoParams } from './group.response.dto';
 import { LecturerResponseDto, LecturerResponseDtoParams } from './lecturer.response.dto';
 import { SubjectResponseDto, SubjectResponseDtoParams } from './subject.response.dto';
@@ -8,6 +9,7 @@ export interface LessonResponseDtoParams {
   endAt: Date;
   group: GroupResponseDtoParams;
   subject: SubjectResponseDtoParams;
+  auditorium: AuditoriumResponseDtoParams;
   lecturers: LecturerResponseDtoParams[];
 }
 
@@ -19,6 +21,7 @@ export class LessonResponseDto {
       endAt: params.endAt,
       group: new GroupResponseDto(params.group),
       subject: new SubjectResponseDto(params.subject),
+      auditorium: new AuditoriumResponseDto(params.auditorium),
       lecturers: params.lecturers.map((lecturer) => new LecturerResponseDto(lecturer)),
     };
 
@@ -30,5 +33,6 @@ export class LessonResponseDto {
   endAt: Date;
   group: GroupResponseDto;
   subject: SubjectResponseDto;
+  auditorium: AuditoriumResponseDto;
   lecturers: LecturerResponseDto[];
 }
