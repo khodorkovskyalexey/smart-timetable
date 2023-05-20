@@ -83,7 +83,7 @@
     }
   },
   "validate-branch-name": {
-    "pattern": "^(feature|fix|chore|hotfix|refactor)/.+$",
+    "pattern": "develop|^(feature|fix|chore|hotfix|refactor)/.+$",
     "errorMsg": "Invalid branch name"
   }
 }
