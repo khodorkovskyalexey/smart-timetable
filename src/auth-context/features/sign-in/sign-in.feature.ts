@@ -5,6 +5,7 @@ import { SignInFeatureDto } from './sign-in.feature.dto';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
+import { TokenPayload } from 'src/auth-context/core/types';
 
 @Injectable()
 export class SignInFeature {
@@ -12,7 +13,7 @@ export class SignInFeature {
   private jwtExpiresIn: number;
 
   constructor(private readonly jwtService: JwtService, private readonly configService: ConfigService) {
-    this.jwtSecret = this.configService.getOrThrow<string>('jwt.secret') as string;
+    this.jwtSecret = this.configService.getOrThrow<string>('jwt.secret');
     this.jwtExpiresIn = this.configService.getOrThrow<number>('jwt.expiresIn');
   }
 
@@ -27,16 +28,15 @@ export class SignInFeature {
       throw new BadRequestException('Invalid email or password');
     }
 
-    const token = this.jwtService.sign(
-      {
-        id: user.id,
-        expiration: this.getExpirationTime(),
-      },
-      {
-        secret: this.jwtSecret,
-        expiresIn: this.jwtExpiresIn,
-      },
-    );
+    const payload: TokenPayload = {
+      id: user.id,
+      expiration: this.getExpirationTime(),
+    };
+
+    const token = this.jwtService.sign(payload, {
+      secret: this.jwtSecret,
+      expiresIn: this.jwtExpiresIn,
+    });
 
     return {
       token,
