@@ -1,1 +1,2 @@
-export { ObjectionEntityBase } from './base.model';
+export * from './base.entity';
+export * from './user.entity';
