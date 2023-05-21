@@ -12,6 +12,10 @@ export const validationSchema = Joi.object({
   DATABASE_NAME: Joi.string().required(),
   DATABASE_USER: Joi.string().required(),
   DATABASE_PASSWORD: Joi.string().required(),
+
+  // JWT
+  JWT_SECRET: Joi.string().required(),
+  JWT_EXPIRES_IN: Joi.string().required(),
 });
 
 export const configuration = () => ({
@@ -26,6 +30,10 @@ export const configuration = () => ({
     dbName: process.env.DATABASE_NAME,
     user: process.env.DATABASE_USER,
     password: process.env.DATABASE_PASSWORD,
+  },
+  jwt: {
+    secret: process.env.JWT_SECRET,
+    expiresIn: process.env.JWT_EXPIRES_IN,
   },
 });
 

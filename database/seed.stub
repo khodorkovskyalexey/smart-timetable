@@ -1,4 +1,11 @@
 import type { Knex } from 'knex';
+import { Logger } from '@nestjs/common';
 
 export async function seed(knex: Knex): Promise<any> {
+  const isProd = process.env.NODE_ENV === 'production';
+
+  if (isProd) {
+    Logger.log('Production mode. Skipping seed.');
+    return;
+  }
 }

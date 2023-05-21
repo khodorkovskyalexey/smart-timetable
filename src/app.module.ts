@@ -5,6 +5,7 @@ import { DatabaseModule } from 'src/infrastructure/database/database.module';
 import { AppService } from './app.service';
 import { AppController } from './app.controller';
 import { RaspContextModule } from './rasp-context/rasp-context.module';
+import { AuthContextModule } from './auth-context/auth-context.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { RaspContextModule } from './rasp-context/rasp-context.module';
     }),
     DatabaseModule,
     RaspContextModule,
+    AuthContextModule,
   ],
   controllers: [AppController],
   providers: [AppService],

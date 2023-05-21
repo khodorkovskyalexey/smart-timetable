@@ -5,15 +5,14 @@ import { knexSnakeCaseMappers } from 'objection';
 
 const config: Knex.Config = {
   client: 'pg',
-  debug: true, // TODO: remove in prod
+  debug: process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'staging',
   connection: {
-    host: process.env.POSTGRES_HOST,
-    port: parseInt(process.env.POSTGRES_PORT ?? '5432', 10),
-    database: process.env.POSTGRES_DB_NAME,
-    user: process.env.POSTGRES_USER,
-    password: process.env.POSTGRES_PASSWORD,
+    host: process.env.DATABASE_HOST,
+    port: parseInt(process.env.DATABASE_PORT ?? '5432', 10),
+    database: process.env.DATABASE_DB_NAME,
+    user: process.env.DATABASE_USER,
+    password: process.env.DATABASE_PASSWORD,
   },
-  ...knexSnakeCaseMappers(),
   pool: {
     min: 2,
     max: 40,
