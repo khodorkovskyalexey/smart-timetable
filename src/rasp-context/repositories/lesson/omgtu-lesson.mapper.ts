@@ -2,6 +2,7 @@ import { NotImplementedException } from '@nestjs/common';
 import { Group, Lesson, Subject } from 'src/rasp-context/core/interfaces';
 import { Auditorium } from 'src/rasp-context/core/interfaces/auditorium';
 import { RaspTargetFilterType } from 'src/rasp-context/core/interfaces/rasp-target-filter';
+import { LessonType } from 'src/rasp-context/core/types';
 import { encodeLessonId, formatLessonDate, getGroupId } from 'src/rasp-context/core/utils';
 import { RaspOmgtuScheduleFor, ScheduleResponse } from 'src/third-parties/rasp-omgtu-skd';
 
@@ -42,6 +43,7 @@ export class OmgtuLessonMapper {
         lecturers: lesson.listOfLecturers.map((lecturer) => ({ id: lecturer.lecturerOid, name: lecturer.lecturer })),
         subject,
         auditorium,
+        type: LessonType.OMGTU_LESSON,
       };
     });
 
