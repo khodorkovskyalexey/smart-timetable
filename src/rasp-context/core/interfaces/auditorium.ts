@@ -1,6 +1,6 @@
 import { OmgtuRaspId } from '../types';
 
 export interface Auditorium {
-  id: OmgtuRaspId;
+  id?: OmgtuRaspId;
   name: string;
 }

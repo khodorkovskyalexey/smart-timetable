@@ -1,5 +1,5 @@
 export interface AuditoriumResponseDtoParams {
-  id: number;
+  id?: number;
   name: string;
 }
 
@@ -13,7 +13,7 @@ export class AuditoriumResponseDto {
     Object.assign(this, assignObject);
   }
 
-  id: number;
+  id?: number;
 
   name: string;
 }

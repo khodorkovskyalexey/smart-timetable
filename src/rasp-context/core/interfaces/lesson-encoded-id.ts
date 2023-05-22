@@ -4,7 +4,7 @@ export type LessonEncodedId = string;
 
 export interface LessonEncodedIdPayload {
   startAt: Date;
-  groupId: OmgtuRaspId;
+  groupId?: OmgtuRaspId;
   lecturersIds: OmgtuRaspId[];
   subjectId: OmgtuRaspId;
 }

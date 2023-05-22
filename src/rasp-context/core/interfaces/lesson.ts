@@ -1,3 +1,4 @@
+import { LessonType } from '../types';
 import { Auditorium } from './auditorium';
 import { Group } from './group';
 import { Lecturer } from './lecturer';
@@ -12,4 +13,5 @@ export interface Lesson {
   subject: Subject;
   auditorium: Auditorium;
   lecturers: Lecturer[];
+  type: LessonType;
 }
