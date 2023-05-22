@@ -48,7 +48,7 @@ export class LessonResponseDto {
 
   @ApiProperty({
     enum: LessonType,
-    name: 'LessonTypeEnum',
+    enumName: 'LessonTypeEnum',
     example: LessonType.OMGTU_LESSON,
   })
   type: LessonType;

@@ -1,15 +1,68 @@
-import { Injectable, NotImplementedException } from '@nestjs/common';
+import { Injectable, InternalServerErrorException, NotImplementedException } from '@nestjs/common';
 import * as _ from 'lodash';
+import { v4 as uuidV4 } from 'uuid';
 import { CustomEventEntity, GroupEntity, UserEntity } from 'src/infrastructure/database/objection/entities';
 import { Lesson } from 'src/rasp-context/core/interfaces';
 import { RaspTargetFilter } from 'src/rasp-context/core/interfaces/rasp-target-filter';
 import { RaspOmgtuScheduleFor, RaspOmgtuSdkService } from 'src/third-parties/rasp-omgtu-skd';
 import { OmgtuLessonMapper } from './omgtu-lesson.mapper';
 import { CustomEventMapper } from './custom-event.mapper';
+import { getGroupId } from 'src/rasp-context/core/utils';
 
 @Injectable()
 export class LessonRepository {
   constructor(private readonly raspOmgtuSdkService: RaspOmgtuSdkService) {}
+
+  async createCustomEvent(params: {
+    lecturerId: string;
+    groupOmgtuRaspId?: number;
+    subgroupOmgtuRaspId?: number;
+    groupListOmgtuRaspId?: number;
+    groupName: string;
+    name: string;
+    auditoriumName: string;
+    startAt: Date;
+    endAt: Date;
+  }): Promise<Lesson> {
+    const groupId = getGroupId({
+      groupId: params.groupOmgtuRaspId,
+      subGroupId: params.subgroupOmgtuRaspId,
+      groupListId: params.groupListOmgtuRaspId,
+    });
+
+    if (!groupId) {
+      throw new InternalServerErrorException('Group id required');
+    }
+
+    let group = await GroupEntity.query().select('id').modify('findOneByGroupId', groupId).limit(1).first();
+
+    if (!group) {
+      group = await GroupEntity.query().select('id').insertAndFetch({
+        groupOmgtuRaspId: params.groupOmgtuRaspId,
+        subgroupOmgtuRaspId: params.subgroupOmgtuRaspId,
+        groupListOmgtuRaspId: params.groupListOmgtuRaspId,
+        name: params.groupName,
+      });
+    }
+
+    const customEvent = await CustomEventEntity.query()
+      .insertAndFetch({
+        id: uuidV4(),
+
+        name: params.name,
+        auditoriumName: params.auditoriumName,
+        lecturerId: params.lecturerId,
+        groupId: group.id,
+        startAt: params.startAt,
+        endAt: params.endAt,
+
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .withGraphFetched({ group: true, lecturer: true });
+
+    return CustomEventMapper.parse(customEvent);
+  }
 
   async getByGroup(groupId: number, dates: { start: Date; end: Date }): Promise<Lesson[]> {
     const startDate = dates.start.toISOString();
@@ -19,14 +72,7 @@ export class LessonRepository {
       .whereIn(
         // whereIn because may not be in smart-timetable database
         'groupId',
-        GroupEntity.query()
-          .select('id')
-          .findOne((query) =>
-            query
-              .where({ groupOmgtuRaspId: groupId })
-              .orWhere({ subgroupOmgtuRaspId: groupId })
-              .orWhere({ groupListOmgtuRaspId: groupId }),
-          ),
+        GroupEntity.query().select('id').modify('findOneByGroupId', groupId).limit(1),
       )
       .withGraphFetched({ group: true, lecturer: true })
       .modify('searchByDates', startDate, endDate);
@@ -36,7 +82,7 @@ export class LessonRepository {
       customEventsQuery,
     ]);
 
-    return _.union(OmgtuLessonMapper.parseRaspOmgtu(raspOmgtuLessons), CustomEventMapper.parse(customEvents));
+    return _.union(OmgtuLessonMapper.parseRaspOmgtu(raspOmgtuLessons), CustomEventMapper.parseMany(customEvents));
   }
 
   async getByLecturer(lecturerId: number, dates: { start: Date; end: Date }): Promise<Lesson[]> {
@@ -57,7 +103,7 @@ export class LessonRepository {
       customEventsQuery,
     ]);
 
-    return _.union(OmgtuLessonMapper.parseRaspOmgtu(raspOmgtuLessons), CustomEventMapper.parse(customEvents));
+    return _.union(OmgtuLessonMapper.parseRaspOmgtu(raspOmgtuLessons), CustomEventMapper.parseMany(customEvents));
   }
 
   async getByAuditorium(auditoriumId: number, dates: { start: Date; end: Date }): Promise<Lesson[]> {
