@@ -5,7 +5,7 @@ import { RaspTargetFilterType } from 'src/rasp-context/core/interfaces/rasp-targ
 import { encodeLessonId, formatLessonDate, getGroupId } from 'src/rasp-context/core/utils';
 import { RaspOmgtuScheduleFor, ScheduleResponse } from 'src/third-parties/rasp-omgtu-skd';
 
-export class LessonMapper {
+export class OmgtuLessonMapper {
   static parseRaspOmgtu(lessons: ScheduleResponse[]) {
     const coreLessons = lessons.map<Lesson>((lesson) => {
       const group: Group = {

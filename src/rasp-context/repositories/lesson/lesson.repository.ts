@@ -1,8 +1,11 @@
 import { Injectable, NotImplementedException } from '@nestjs/common';
+import * as _ from 'lodash';
+import { CustomEventEntity, GroupEntity, UserEntity } from 'src/infrastructure/database/objection/entities';
 import { Lesson } from 'src/rasp-context/core/interfaces';
 import { RaspTargetFilter } from 'src/rasp-context/core/interfaces/rasp-target-filter';
 import { RaspOmgtuScheduleFor, RaspOmgtuSdkService } from 'src/third-parties/rasp-omgtu-skd';
-import { LessonMapper } from './lesson.mapper';
+import { OmgtuLessonMapper } from './omgtu-lesson.mapper';
+import { CustomEventMapper } from './custom-event.mapper';
 
 @Injectable()
 export class LessonRepository {
@@ -12,18 +15,49 @@ export class LessonRepository {
     const startDate = dates.start.toISOString();
     const endDate = dates.end.toISOString();
 
-    const raspOmgtuLessons = await this.raspOmgtuSdkService.schedulesForGroup(groupId, startDate, endDate);
+    const customEventsQuery = CustomEventEntity.query()
+      .whereIn(
+        // whereIn because may not be in smart-timetable database
+        'groupId',
+        GroupEntity.query()
+          .select('id')
+          .findOne((query) =>
+            query
+              .where({ groupOmgtuRaspId: groupId })
+              .orWhere({ subgroupOmgtuRaspId: groupId })
+              .orWhere({ groupListOmgtuRaspId: groupId }),
+          ),
+      )
+      .withGraphFetched({ group: true, lecturer: true })
+      .modify('searchByDates', startDate, endDate);
 
-    return LessonMapper.parseRaspOmgtu(raspOmgtuLessons);
+    const [raspOmgtuLessons, customEvents] = await Promise.all([
+      this.raspOmgtuSdkService.schedulesForGroup(groupId, startDate, endDate),
+      customEventsQuery,
+    ]);
+
+    return _.union(OmgtuLessonMapper.parseRaspOmgtu(raspOmgtuLessons), CustomEventMapper.parse(customEvents));
   }
 
   async getByLecturer(lecturerId: number, dates: { start: Date; end: Date }): Promise<Lesson[]> {
     const startDate = dates.start.toISOString();
     const endDate = dates.end.toISOString();
 
-    const raspOmgtuLessons = await this.raspOmgtuSdkService.schedulesForLecturer(lecturerId, startDate, endDate);
+    const customEventsQuery = CustomEventEntity.query()
+      .whereIn(
+        // whereIn because may not be in smart-timetable database
+        'lecturerId',
+        UserEntity.query().select('id').findOne({ lecturerOmgtuRaspId: lecturerId }),
+      )
+      .withGraphFetched({ group: true, lecturer: true })
+      .modify('searchByDates', startDate, endDate);
 
-    return LessonMapper.parseRaspOmgtu(raspOmgtuLessons);
+    const [raspOmgtuLessons, customEvents] = await Promise.all([
+      this.raspOmgtuSdkService.schedulesForLecturer(lecturerId, startDate, endDate),
+      customEventsQuery,
+    ]);
+
+    return _.union(OmgtuLessonMapper.parseRaspOmgtu(raspOmgtuLessons), CustomEventMapper.parse(customEvents));
   }
 
   async getByAuditorium(auditoriumId: number, dates: { start: Date; end: Date }): Promise<Lesson[]> {
@@ -32,7 +66,7 @@ export class LessonRepository {
 
     const raspOmgtuLessons = await this.raspOmgtuSdkService.schedulesForAuditorium(auditoriumId, startDate, endDate);
 
-    return LessonMapper.parseRaspOmgtu(raspOmgtuLessons);
+    return OmgtuLessonMapper.parseRaspOmgtu(raspOmgtuLessons);
   }
 
   async getRaspTargetFilters(filter: string): Promise<RaspTargetFilter[]> {
@@ -47,7 +81,7 @@ export class LessonRepository {
     try {
       const coreTargetFilters = sortedTargetFilters.map<RaspTargetFilter>(({ id, type, label, description }) => ({
         id,
-        type: LessonMapper.parseRaspOmgtuScheduleFor(type),
+        type: OmgtuLessonMapper.parseRaspOmgtuScheduleFor(type),
         title: label,
         description,
       }));

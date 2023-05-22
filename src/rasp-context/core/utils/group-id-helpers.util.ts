@@ -4,7 +4,7 @@ export const getGroupId = (group: Group) => {
   const id = group.groupId ?? group.groupListId ?? group.subGroupId;
 
   if (!id) {
-    throw new Error('Group id not found');
+    return undefined;
   }
 
   const idsCount = Number(!!group.groupId) + Number(!!group.groupListId) + Number(!!group.subGroupId);

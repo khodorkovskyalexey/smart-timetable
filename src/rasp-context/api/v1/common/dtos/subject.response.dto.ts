@@ -1,5 +1,5 @@
 export interface SubjectResponseDtoParams {
-  id: number;
+  id?: number;
   name: string;
 }
 
@@ -13,7 +13,7 @@ export class SubjectResponseDto {
     Object.assign(this, assignObject);
   }
 
-  id: number;
+  id?: number;
 
   name: string;
 }
