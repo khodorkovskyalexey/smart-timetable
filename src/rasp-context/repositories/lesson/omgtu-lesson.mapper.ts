@@ -2,11 +2,11 @@ import { NotImplementedException } from '@nestjs/common';
 import { CommentEntityInterface } from 'src/infrastructure/database/interfaces';
 import { Group, Lesson, Subject } from 'src/rasp-context/core/interfaces';
 import { Auditorium } from 'src/rasp-context/core/interfaces/auditorium';
-import { Comment } from 'src/rasp-context/core/interfaces/comment';
 import { RaspTargetFilterType } from 'src/rasp-context/core/interfaces/rasp-target-filter';
 import { LessonType } from 'src/rasp-context/core/types';
 import { encodeLessonId, formatLessonDate, getGroupId } from 'src/rasp-context/core/utils';
 import { RaspOmgtuScheduleFor, ScheduleResponse } from 'src/third-parties/rasp-omgtu-skd';
+import { CommentMapper } from './comment.mapper';
 
 export class OmgtuLessonMapper {
   static parseId(lesson: ScheduleResponse) {
@@ -59,7 +59,7 @@ export class OmgtuLessonMapper {
         lecturersIds: lesson.listOfLecturers.map((lecturer) => lecturer.lecturerOid),
       });
 
-      const comment: Comment | undefined = comments.find((comment) => comment.lessonEncodedId === id);
+      const comment: CommentEntityInterface | undefined = comments.find((comment) => comment.lessonEncodedId === id);
 
       return {
         id,
@@ -70,7 +70,7 @@ export class OmgtuLessonMapper {
         subject,
         auditorium,
         type: LessonType.OMGTU_LESSON,
-        comment,
+        comment: comment ? CommentMapper.parse(comment) : undefined,
       };
     });
 

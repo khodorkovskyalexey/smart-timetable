@@ -1,4 +1,10 @@
-import { Injectable, InternalServerErrorException, NotImplementedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  InternalServerErrorException,
+  NotImplementedException,
+} from '@nestjs/common';
 import * as _ from 'lodash';
 import { v4 as uuidV4 } from 'uuid';
 import {
@@ -13,10 +19,56 @@ import { RaspOmgtuScheduleFor, RaspOmgtuSdkService } from 'src/third-parties/ras
 import { OmgtuLessonMapper } from './omgtu-lesson.mapper';
 import { CustomEventMapper } from './custom-event.mapper';
 import { getGroupId } from 'src/rasp-context/core/utils';
+import { Comment } from 'src/rasp-context/core/interfaces/comment';
+import { LessonType } from 'src/rasp-context/core/types';
+import { getCommentLessonId } from 'src/rasp-context/core/utils/comment-lesson-id-helpers.util';
+import { CommentMapper } from './comment.mapper';
 
 @Injectable()
 export class LessonRepository {
   constructor(private readonly raspOmgtuSdkService: RaspOmgtuSdkService) {}
+
+  async createComment(params: {
+    authorId: string;
+    text: string;
+    lessonType: LessonType;
+    lessonId: string;
+  }): Promise<Comment> {
+    const { authorId, lessonId, lessonType, text } = params;
+    const { customEventId, lessonEncodedId } = getCommentLessonId(lessonId, lessonType);
+
+    const existingCommentQb = CommentEntity.query().select('id').limit(1).first();
+    if (customEventId) {
+      existingCommentQb.where({ customEventId });
+    }
+    if (lessonEncodedId) {
+      existingCommentQb.where({ lessonEncodedId });
+    }
+
+    const [existingComment, customEvent] = await Promise.all([
+      existingCommentQb,
+      lessonType === LessonType.CUSTOM_EVENT
+        ? CustomEventEntity.query().select('id').findOne({ id: lessonId, lecturerId: authorId })
+        : undefined,
+    ]);
+
+    if (existingComment) {
+      throw new BadRequestException('Comment for this lesson already exist');
+    }
+
+    if (lessonType === LessonType.CUSTOM_EVENT && !customEvent) {
+      throw new ForbiddenException('You can comment only own custom event');
+    }
+
+    const comment = await CommentEntity.query().insertAndFetch({
+      authorId,
+      text,
+      customEventId,
+      lessonEncodedId,
+    });
+
+    return CommentMapper.parse(comment);
+  }
 
   async createCustomEvent(params: {
     lecturerId: string;

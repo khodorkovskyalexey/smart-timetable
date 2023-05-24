@@ -5,6 +5,7 @@ import { Group, Lecturer, Lesson, Subject } from 'src/rasp-context/core/interfac
 import { Auditorium } from 'src/rasp-context/core/interfaces/auditorium';
 import { Comment } from 'src/rasp-context/core/interfaces/comment';
 import { LessonType } from 'src/rasp-context/core/types';
+import { CommentMapper } from './comment.mapper';
 
 export class CustomEventMapper {
   static parse(customEvent: CustomEventEntityInterface): Lesson {
@@ -34,13 +35,7 @@ export class CustomEventMapper {
       name: getFio(customEvent.lecturer.firstName, customEvent.lecturer.lastName),
     };
 
-    const comment: Comment | undefined = customEvent.comment
-      ? {
-          id: customEvent.comment.id,
-          authorId: customEvent.comment.authorId,
-          text: customEvent.comment.text,
-        }
-      : undefined;
+    const comment: Comment | undefined = customEvent.comment ? CommentMapper.parse(customEvent.comment) : undefined;
 
     return {
       id: customEvent.id,

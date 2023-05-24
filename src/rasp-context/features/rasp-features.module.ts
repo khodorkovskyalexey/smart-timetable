@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { RaspRepositoriesModule } from '../repositories/rasp-repositories.module';
+import { CreateCommentFeature } from './create-comment/create-comment.feature';
 import { CreateCustomEventFeature } from './create-custom-event/create-custom-event.feature';
 import { GetLessonsByAuditoriumFeature } from './get-lessons-by-auditorium/get-lessons-by-auditorium.feature';
 import { GetLessonsByGroupFeature } from './get-lessons-by-group/get-lessons-by-group.feature';
@@ -12,6 +13,7 @@ const features = [
   GetLessonsByAuditoriumFeature,
   GetRaspTargetFiltersFeature,
   CreateCustomEventFeature,
+  CreateCommentFeature,
 ];
 
 @Module({
