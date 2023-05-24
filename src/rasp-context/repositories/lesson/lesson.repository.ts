@@ -3,6 +3,7 @@ import {
   ForbiddenException,
   Injectable,
   InternalServerErrorException,
+  NotFoundException,
   NotImplementedException,
 } from '@nestjs/common';
 import * as _ from 'lodash';
@@ -27,6 +28,46 @@ import { CommentMapper } from './comment.mapper';
 @Injectable()
 export class LessonRepository {
   constructor(private readonly raspOmgtuSdkService: RaspOmgtuSdkService) {}
+
+  async updateComment(params: {
+    authorId: string;
+    text: string;
+    lessonType: LessonType;
+    lessonId: string;
+  }): Promise<Comment> {
+    const { authorId, lessonId, lessonType, text } = params;
+    const { customEventId, lessonEncodedId } = getCommentLessonId(lessonId, lessonType);
+
+    const commentQb = CommentEntity.query()
+      .select('id')
+      .limit(1)
+      .first()
+      .throwIfNotFound(new NotFoundException('Comment not found'));
+    if (customEventId) {
+      commentQb.where({ customEventId });
+    }
+    if (lessonEncodedId) {
+      commentQb.where({ lessonEncodedId });
+    }
+
+    const [comment, customEvent] = await Promise.all([
+      commentQb,
+      lessonType === LessonType.CUSTOM_EVENT
+        ? CustomEventEntity.query().select('id').findOne({ id: lessonId, lecturerId: authorId })
+        : undefined,
+    ]);
+
+    if (lessonType === LessonType.CUSTOM_EVENT && !customEvent) {
+      throw new ForbiddenException('You can comment only own custom event');
+    }
+
+    const updatedComment = await comment.$query().patchAndFetch({
+      authorId,
+      text,
+    });
+
+    return CommentMapper.parse(updatedComment);
+  }
 
   async createComment(params: {
     authorId: string;

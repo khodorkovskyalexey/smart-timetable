@@ -6,6 +6,7 @@ import { GetLessonsByAuditoriumFeature } from './get-lessons-by-auditorium/get-l
 import { GetLessonsByGroupFeature } from './get-lessons-by-group/get-lessons-by-group.feature';
 import { GetLessonsByLecturerFeature } from './get-lessons-by-lecturer/get-lessons-by-lecturer.feature';
 import { GetRaspTargetFiltersFeature } from './get-rasp-target-filters/get-rasp-target-filters.feature';
+import { UpdateCommentFeature } from './update-comment/update-comment.feature';
 
 const features = [
   GetLessonsByGroupFeature,
@@ -14,6 +15,7 @@ const features = [
   GetRaspTargetFiltersFeature,
   CreateCustomEventFeature,
   CreateCommentFeature,
+  UpdateCommentFeature,
 ];
 
 @Module({
