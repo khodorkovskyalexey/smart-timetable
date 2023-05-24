@@ -1,13 +1,35 @@
 import { NotImplementedException } from '@nestjs/common';
+import { CommentEntityInterface } from 'src/infrastructure/database/interfaces';
 import { Group, Lesson, Subject } from 'src/rasp-context/core/interfaces';
 import { Auditorium } from 'src/rasp-context/core/interfaces/auditorium';
+import { Comment } from 'src/rasp-context/core/interfaces/comment';
 import { RaspTargetFilterType } from 'src/rasp-context/core/interfaces/rasp-target-filter';
 import { LessonType } from 'src/rasp-context/core/types';
 import { encodeLessonId, formatLessonDate, getGroupId } from 'src/rasp-context/core/utils';
 import { RaspOmgtuScheduleFor, ScheduleResponse } from 'src/third-parties/rasp-omgtu-skd';
 
 export class OmgtuLessonMapper {
-  static parseRaspOmgtu(lessons: ScheduleResponse[]) {
+  static parseId(lesson: ScheduleResponse) {
+    const group: Group = {
+      groupId: lesson.groupOid ? lesson.groupOid : undefined, // by default groupOid is 0
+      groupListId: lesson.streamOid ? lesson.streamOid : undefined,
+      subGroupId: lesson.subGroupOid ? lesson.subGroupOid : undefined,
+      groupListName: lesson.stream,
+      groupName: lesson.group,
+      subGroupName: lesson.subGroup,
+    };
+
+    const lessonStartTime = formatLessonDate(lesson.date, lesson.beginLesson);
+
+    return encodeLessonId({
+      groupId: getGroupId(group),
+      startAt: lessonStartTime,
+      subjectId: lesson.disciplineOid,
+      lecturersIds: lesson.listOfLecturers.map((lecturer) => lecturer.lecturerOid),
+    });
+  }
+
+  static parseRaspOmgtu(lessons: ScheduleResponse[], comments: CommentEntityInterface[]): Lesson[] {
     const coreLessons = lessons.map<Lesson>((lesson) => {
       const group: Group = {
         groupId: lesson.groupOid ? lesson.groupOid : undefined, // by default groupOid is 0
@@ -30,13 +52,17 @@ export class OmgtuLessonMapper {
 
       const lessonStartTime = formatLessonDate(lesson.date, lesson.beginLesson);
 
+      const id = encodeLessonId({
+        groupId: getGroupId(group),
+        startAt: lessonStartTime,
+        subjectId: lesson.disciplineOid,
+        lecturersIds: lesson.listOfLecturers.map((lecturer) => lecturer.lecturerOid),
+      });
+
+      const comment: Comment | undefined = comments.find((comment) => comment.lessonEncodedId === id);
+
       return {
-        id: encodeLessonId({
-          groupId: getGroupId(group),
-          startAt: lessonStartTime,
-          subjectId: lesson.disciplineOid,
-          lecturersIds: lesson.listOfLecturers.map((lecturer) => lecturer.lecturerOid),
-        }),
+        id,
         startAt: lessonStartTime,
         endAt: formatLessonDate(lesson.date, lesson.endLesson),
         group,
@@ -44,6 +70,7 @@ export class OmgtuLessonMapper {
         subject,
         auditorium,
         type: LessonType.OMGTU_LESSON,
+        comment,
       };
     });
 

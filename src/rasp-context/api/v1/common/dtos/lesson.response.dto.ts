@@ -1,6 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { LessonType } from 'src/rasp-context/core/types';
 import { AuditoriumResponseDto, AuditoriumResponseDtoParams } from './auditorium.response.dto';
+import { CommentResponseDto, CommentResponseDtoParams } from './comment.response.dto';
 import { GroupResponseDto, GroupResponseDtoParams } from './group.response.dto';
 import { LecturerResponseDto, LecturerResponseDtoParams } from './lecturer.response.dto';
 import { SubjectResponseDto, SubjectResponseDtoParams } from './subject.response.dto';
@@ -14,6 +15,7 @@ export interface LessonResponseDtoParams {
   auditorium: AuditoriumResponseDtoParams;
   lecturers: LecturerResponseDtoParams[];
   type: LessonType;
+  comment?: CommentResponseDtoParams;
 }
 
 export class LessonResponseDto {
@@ -27,6 +29,7 @@ export class LessonResponseDto {
       auditorium: new AuditoriumResponseDto(params.auditorium),
       lecturers: params.lecturers.map((lecturer) => new LecturerResponseDto(lecturer)),
       type: params.type,
+      comment: params.comment ? new CommentResponseDto(params.comment) : undefined,
     };
 
     Object.assign(this, assignObject);
@@ -52,4 +55,6 @@ export class LessonResponseDto {
     example: LessonType.OMGTU_LESSON,
   })
   type: LessonType;
+
+  comment?: CommentResponseDto;
 }

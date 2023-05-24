@@ -3,6 +3,7 @@ import { CustomEventEntityInterface } from 'src/infrastructure/database/interfac
 import { getFio } from 'src/libs/utils';
 import { Group, Lecturer, Lesson, Subject } from 'src/rasp-context/core/interfaces';
 import { Auditorium } from 'src/rasp-context/core/interfaces/auditorium';
+import { Comment } from 'src/rasp-context/core/interfaces/comment';
 import { LessonType } from 'src/rasp-context/core/types';
 
 export class CustomEventMapper {
@@ -33,6 +34,14 @@ export class CustomEventMapper {
       name: getFio(customEvent.lecturer.firstName, customEvent.lecturer.lastName),
     };
 
+    const comment: Comment | undefined = customEvent.comment
+      ? {
+          id: customEvent.comment.id,
+          authorId: customEvent.comment.authorId,
+          text: customEvent.comment.text,
+        }
+      : undefined;
+
     return {
       id: customEvent.id,
       startAt: customEvent.startAt,
@@ -42,10 +51,11 @@ export class CustomEventMapper {
       subject,
       auditorium,
       type: LessonType.CUSTOM_EVENT,
+      comment,
     };
   }
 
-  static parseMany(customEvents: CustomEventEntityInterface[]) {
-    return customEvents.map<Lesson>(CustomEventMapper.parse);
+  static parseMany(customEvents: CustomEventEntityInterface[]): Lesson[] {
+    return customEvents.map(CustomEventMapper.parse);
   }
 }

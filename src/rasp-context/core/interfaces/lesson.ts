@@ -1,5 +1,6 @@
 import { LessonType } from '../types';
 import { Auditorium } from './auditorium';
+import { Comment } from './comment';
 import { Group } from './group';
 import { Lecturer } from './lecturer';
 import { LessonEncodedId } from './lesson-encoded-id';
@@ -14,4 +15,5 @@ export interface Lesson {
   auditorium: Auditorium;
   lecturers: Lecturer[];
   type: LessonType;
+  comment?: Comment;
 }
