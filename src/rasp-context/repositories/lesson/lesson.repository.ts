@@ -1,17 +1,115 @@
-import { Injectable, InternalServerErrorException, NotImplementedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  InternalServerErrorException,
+  NotFoundException,
+  NotImplementedException,
+} from '@nestjs/common';
 import * as _ from 'lodash';
 import { v4 as uuidV4 } from 'uuid';
-import { CustomEventEntity, GroupEntity, UserEntity } from 'src/infrastructure/database/objection/entities';
+import {
+  CommentEntity,
+  CustomEventEntity,
+  GroupEntity,
+  UserEntity,
+} from 'src/infrastructure/database/objection/entities';
 import { Lesson } from 'src/rasp-context/core/interfaces';
 import { RaspTargetFilter } from 'src/rasp-context/core/interfaces/rasp-target-filter';
 import { RaspOmgtuScheduleFor, RaspOmgtuSdkService } from 'src/third-parties/rasp-omgtu-skd';
 import { OmgtuLessonMapper } from './omgtu-lesson.mapper';
 import { CustomEventMapper } from './custom-event.mapper';
 import { getGroupId } from 'src/rasp-context/core/utils';
+import { Comment } from 'src/rasp-context/core/interfaces/comment';
+import { LessonType } from 'src/rasp-context/core/types';
+import { getCommentLessonId } from 'src/rasp-context/core/utils/comment-lesson-id-helpers.util';
+import { CommentMapper } from './comment.mapper';
 
 @Injectable()
 export class LessonRepository {
   constructor(private readonly raspOmgtuSdkService: RaspOmgtuSdkService) {}
+
+  async updateComment(params: {
+    authorId: string;
+    text: string;
+    lessonType: LessonType;
+    lessonId: string;
+  }): Promise<Comment> {
+    const { authorId, lessonId, lessonType, text } = params;
+    const { customEventId, lessonEncodedId } = getCommentLessonId(lessonId, lessonType);
+
+    const commentQb = CommentEntity.query()
+      .select('id')
+      .limit(1)
+      .first()
+      .throwIfNotFound(new NotFoundException('Comment not found'));
+    if (customEventId) {
+      commentQb.where({ customEventId });
+    }
+    if (lessonEncodedId) {
+      commentQb.where({ lessonEncodedId });
+    }
+
+    const [comment, customEvent] = await Promise.all([
+      commentQb,
+      lessonType === LessonType.CUSTOM_EVENT
+        ? CustomEventEntity.query().select('id').findOne({ id: lessonId, lecturerId: authorId })
+        : undefined,
+    ]);
+
+    if (lessonType === LessonType.CUSTOM_EVENT && !customEvent) {
+      throw new ForbiddenException('You can comment only own custom event');
+    }
+
+    const updatedComment = await comment.$query().patchAndFetch({
+      authorId,
+      text,
+    });
+
+    return CommentMapper.parse(updatedComment);
+  }
+
+  async createComment(params: {
+    authorId: string;
+    text: string;
+    lessonType: LessonType;
+    lessonId: string;
+  }): Promise<Comment> {
+    const { authorId, lessonId, lessonType, text } = params;
+    const { customEventId, lessonEncodedId } = getCommentLessonId(lessonId, lessonType);
+
+    const existingCommentQb = CommentEntity.query().select('id').limit(1).first();
+    if (customEventId) {
+      existingCommentQb.where({ customEventId });
+    }
+    if (lessonEncodedId) {
+      existingCommentQb.where({ lessonEncodedId });
+    }
+
+    const [existingComment, customEvent] = await Promise.all([
+      existingCommentQb,
+      lessonType === LessonType.CUSTOM_EVENT
+        ? CustomEventEntity.query().select('id').findOne({ id: lessonId, lecturerId: authorId })
+        : undefined,
+    ]);
+
+    if (existingComment) {
+      throw new BadRequestException('Comment for this lesson already exist');
+    }
+
+    if (lessonType === LessonType.CUSTOM_EVENT && !customEvent) {
+      throw new ForbiddenException('You can comment only own custom event');
+    }
+
+    const comment = await CommentEntity.query().insertAndFetch({
+      authorId,
+      text,
+      customEventId,
+      lessonEncodedId,
+    });
+
+    return CommentMapper.parse(comment);
+  }
 
   async createCustomEvent(params: {
     lecturerId: string;
@@ -59,7 +157,7 @@ export class LessonRepository {
         createdAt: new Date(),
         updatedAt: new Date(),
       })
-      .withGraphFetched({ group: true, lecturer: true });
+      .withGraphFetched({ group: true, lecturer: true, comment: true });
 
     return CustomEventMapper.parse(customEvent);
   }
@@ -74,7 +172,7 @@ export class LessonRepository {
         'groupId',
         GroupEntity.query().select('id').modify('findOneByGroupId', groupId).limit(1),
       )
-      .withGraphFetched({ group: true, lecturer: true })
+      .withGraphFetched({ group: true, lecturer: true, comment: true })
       .modify('searchByDates', startDate, endDate);
 
     const [raspOmgtuLessons, customEvents] = await Promise.all([
@@ -82,7 +180,15 @@ export class LessonRepository {
       customEventsQuery,
     ]);
 
-    return _.union(OmgtuLessonMapper.parseRaspOmgtu(raspOmgtuLessons), CustomEventMapper.parseMany(customEvents));
+    const lessonComments = await CommentEntity.query().whereIn(
+      'lessonEncodedId',
+      raspOmgtuLessons.map(OmgtuLessonMapper.parseId),
+    );
+
+    return _.union(
+      OmgtuLessonMapper.parseRaspOmgtu(raspOmgtuLessons, lessonComments),
+      CustomEventMapper.parseMany(customEvents),
+    );
   }
 
   async getByLecturer(lecturerId: number, dates: { start: Date; end: Date }): Promise<Lesson[]> {
@@ -95,7 +201,7 @@ export class LessonRepository {
         'lecturerId',
         UserEntity.query().select('id').findOne({ lecturerOmgtuRaspId: lecturerId }),
       )
-      .withGraphFetched({ group: true, lecturer: true })
+      .withGraphFetched({ group: true, lecturer: true, comment: true })
       .modify('searchByDates', startDate, endDate);
 
     const [raspOmgtuLessons, customEvents] = await Promise.all([
@@ -103,7 +209,15 @@ export class LessonRepository {
       customEventsQuery,
     ]);
 
-    return _.union(OmgtuLessonMapper.parseRaspOmgtu(raspOmgtuLessons), CustomEventMapper.parseMany(customEvents));
+    const lessonComments = await CommentEntity.query().whereIn(
+      'lessonEncodedId',
+      raspOmgtuLessons.map(OmgtuLessonMapper.parseId),
+    );
+
+    return _.union(
+      OmgtuLessonMapper.parseRaspOmgtu(raspOmgtuLessons, lessonComments),
+      CustomEventMapper.parseMany(customEvents),
+    );
   }
 
   async getByAuditorium(auditoriumId: number, dates: { start: Date; end: Date }): Promise<Lesson[]> {
@@ -112,7 +226,12 @@ export class LessonRepository {
 
     const raspOmgtuLessons = await this.raspOmgtuSdkService.schedulesForAuditorium(auditoriumId, startDate, endDate);
 
-    return OmgtuLessonMapper.parseRaspOmgtu(raspOmgtuLessons);
+    const lessonComments = await CommentEntity.query().whereIn(
+      'lessonEncodedId',
+      raspOmgtuLessons.map(OmgtuLessonMapper.parseId),
+    );
+
+    return OmgtuLessonMapper.parseRaspOmgtu(raspOmgtuLessons, lessonComments);
   }
 
   async getRaspTargetFilters(filter: string): Promise<RaspTargetFilter[]> {

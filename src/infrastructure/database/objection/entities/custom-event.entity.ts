@@ -2,6 +2,7 @@ import { InternalServerErrorException } from '@nestjs/common';
 import { AnyQueryBuilder, RelationMappings } from 'objection';
 import { CustomEventEntityInterface } from '../../interfaces';
 import { ObjectionEntityBase } from './base.entity';
+import { CommentEntity } from './comment.entity';
 import { GroupEntity } from './group.entity';
 import { UserEntity } from './user.entity';
 
@@ -23,6 +24,8 @@ export class CustomEventEntity extends ObjectionEntityBase implements CustomEven
   group?: GroupEntity;
 
   lecturer?: UserEntity;
+
+  comment?: CommentEntity;
 
   static get modifiers() {
     return {
@@ -52,6 +55,14 @@ export class CustomEventEntity extends ObjectionEntityBase implements CustomEven
         join: {
           from: `${CustomEventEntity.tableName}.lecturerId`,
           to: `${UserEntity.tableName}.id`,
+        },
+      },
+      comment: {
+        relation: ObjectionEntityBase.BelongsToOneRelation,
+        modelClass: CommentEntity,
+        join: {
+          from: `${CustomEventEntity.tableName}.id`,
+          to: `${CommentEntity.tableName}.customEventId`,
         },
       },
     };
